@@ -14,6 +14,8 @@ import random
 import numpy as np
 from torch.cuda.amp import GradScaler
 from bert_score import score as bert_score_func
+import evaluate
+
 
 def set_seed(seed_value=42):
     """Set seed for reproducibility.
@@ -142,7 +144,7 @@ def add_model_specific_args(parser):
     parser.add_argument("--grad_ckpt", action='store_true', help='Enable gradient checkpointing to save memory')
     parser.add_argument("--attention_window", type=int, default=1024, help="Attention window")
     parser.add_argument("--exp_name", type=str, default="default", help="Experiment Name")
-    parser.add_argument("--checkpoint_path", type=str, default="/rds/user/co-saxe1/hpc-work/output/logging_test/", help="Experiment Name")
+    parser.add_argument("--checkpoint_path", type=str, default="./cache/output/logging_test/", help="Experiment Name")
     parser.add_argument("--max_checkpoints", type=int, default=3, help="Maximum number of checkpoints to be stored")
     parser.add_argument("--beam_size", type=int, default=4, help="Beam size")
     parser.add_argument("--weight_decay", type=float, default=0.01, help="Weight decay")
@@ -173,7 +175,7 @@ def get_dataloader( split_name, is_train):
 
 def loadModel(args):
     config = AutoConfig.from_pretrained(args.model_name,
-                                        cache_dir="/rds/user/co-saxe1/hpc-work/huggingface_cache")
+                                        cache_dir="./cache/huggingface_cache")
 
     if args.model_name=="allenai/led-large-16384":
         print("Setting bos token id to 0")
@@ -186,11 +188,11 @@ def loadModel(args):
         config.use_cache = False
     config.attention_window = [args.attention_window] * len(config.attention_window)
     model = AutoModelForSeq2SeqLM.from_pretrained(args.model_name, config=config,
-                                                  cache_dir="/rds/user/co-saxe1/hpc-work/huggingface_cache")
+                                                  cache_dir="./cache/huggingface_cache")
 
     # Load tokenizer and metric
     tokenizer = AutoTokenizer.from_pretrained(args.model_name, use_fast=True,
-                                              cache_dir="/rds/user/co-saxe1/hpc-work/huggingface_cache")
+                                              cache_dir="./cache/huggingface_cache")
 
     if args.model_name == "allenai/led-large-16384":
         model.resize_token_embeddings(len(tokenizer))
@@ -524,8 +526,10 @@ if __name__ == '__main__':
 
     tokenizer,model,config = loadModel(args)
 
-    rouge = datasets.load_metric('rouge')
-    bertscore = datasets.load_metric("bertscore")
+    #rouge = datasets.load_metric('rouge')
+    rouge = evaluate.load('rouge')
+    #bertscore = datasets.load_metric("bertscore")
+    bertscore = evaluate.load("bertscore")
     logger.info(f'Using model: {args.model_name}')
 
     trainDataset = SummarizationDataset(tokenizer=tokenizer, split_name="train", args=args)
