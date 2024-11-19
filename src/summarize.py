@@ -323,7 +323,7 @@ def evaluate_step(model,args,tokenizer, test=False):
 
         for metric_name in metric_names:
 
-            metric_val = input_ids.new_zeros(1) + results[metric_name].mid.fmeasure
+            metric_val = input_ids.new_zeros(1) + results[metric_name]
             if metric_name in metricsDict:
                 metricsDict[metric_name].append(metric_val)
             else:
